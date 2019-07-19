@@ -1,0 +1,244 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Exercice 1</title>
+
+    <script type="text/javascript">      
+        /**
+        * Create a new array with the dimensions that it receives as a parameter
+        * 
+        *  @param {int} rows -> number of rows
+        *  @param {int} cols -> number of columns
+        *  
+        *  @return {array}
+        */
+        function createBoard(rows, cols){
+            /**
+            * The Array.from() method creates a new, shallow-copied Array instance from an array-like or iterable object.
+            * 
+            * View documentation: https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Objetos_globales/Array/from
+            **/
+            return Array.from(  Array(rows), 
+                                () => Array.from( Array(cols), 
+                                                    () => 0)
+                            );
+
+            /**
+            * This is another way to do the same thing using the FOR structure
+            **/ 
+            /*
+            let array = new Array(rows);
+
+            for(let i=0; i<rows; i++){
+                array[i] = new Array(cols);
+
+                for(let j=0; j<rows; j++){
+                    array[i][j] = 0;
+                }
+
+            }
+
+            return array;
+            */
+        }
+
+        /**
+        * Check if the position received as parameter is valid inside the indicated board.
+        * 
+        *  @param {array} position -> Position to be validated
+        *  @param {array} board    -> board on which it should look if the position is valid
+        *  
+        *  @return {boolean}  TRUE if the position is valid, otherwise FALSE
+        */
+        function isPositionValid(position, board){
+            if( position.length==2){  // Check that the array position has two elements
+                let [col, row] = position; // Initialize  col and row using destructuring.
+
+                if( !(isNaN(col) || isNaN(row)) &&   // Check that the two elements are numeric.
+                    ( (row > 0 && row <= board.length) && (col > 0 && col <= board[0].length) )   // Check that the two elements are within a valid range.
+                ){
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        /**
+        * Add a boat with the indicated length to the board received as a parameter
+        * 
+        *  @param {array} position -> first position of the boat
+        *  @param {int}   squares  -> boat length
+        *  @param {array} board    -> Board on which it should look if the position is valid
+        *  
+        *  @return {boolean}  returns true if the boat could be added, otherwise false.
+        */
+        function addBoatPosition(position, squares, board){
+            if(isPositionValid(position, board)){
+                let col = position[0] - 1,
+                    row = position[1] - 1;
+
+                if( col + squares <= board[row].length ) { // Check if the boat is inside the board
+                    if( !board[row].slice(col, col+squares).includes( 1 ) ){ // Check if the board positions are free
+                        for(let i = col; i < col+squares; i++){
+                            board[row][i] = 1;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+      
+        
+        /**
+        * Request the positions of the new boats.
+        * 
+        *  @param {array} board  -> game board
+        * 
+        *  @return {int}  Total positions occupied by boats.
+        */
+        function requestBoats(board){
+            let numPositions = 0,
+                boatAdded =  false;
+
+            for(let i = 2; i<=3; i++){
+                do {
+                    /**
+                    * Using try...catch, we avoid that an error occurs and stops the game, for example in the case that the user 
+                    * clicks the Cancel button in the prompt window
+                    */
+                    try {
+                        let boatPosition = prompt(`Enter the starting position for a boat with ${i} squares.\nThe format must be: "X,Y". Where X is the column and Y is the row.`);
+
+                        // Transform the string received from the prompt into an array using the comma as a separator.
+                        boatPosition = boatPosition.split(",");
+                        boatAdded = addBoatPosition(boatPosition, i, board);
+                    } catch {
+                        boatAdded = false;
+                    }
+                    
+
+                    if(!boatAdded){
+                        alert("Please, insert a valid position or a free position.");
+                    } else {
+                        numPositions += i;
+                    }
+
+                } while(!boatAdded)
+
+                // The current state of the board is displayed
+                console.log(board);
+            }
+
+            return numPositions;
+        }
+
+
+        
+        /**
+        * Initialize the game
+        * 
+        *  @param {int} shots               -> Number of shots
+        *  @param {int} totalBoatPositions  -> Number of positions that have a part of a boat
+        *  @param {array} board             -> game board
+        */
+        function startGame(shots, totalBoatPositions, board){
+            let touchedBoats = 0;
+
+            alert(`Are you ready? The game starts!\nYou have ${shots} shots to sink all the boats!`);
+            do {
+
+                try {
+                    let inputText = prompt(`Enter the position to shoot. Available shots ${shots}\nThe format must be: "X,Y". Where X is the column and Y is the row.`),
+                        /**
+                        * Transform the string received from the prompt into an array using the comma as a separator and save the contents in 
+                        * the col and row variables using destructuring.
+                        */
+                        [col, row] = inputText.split(",");
+
+                        if(!isPositionValid([col, row], board)){
+                            throw new Error("Invalid position. Please, insert a valid position.");
+                        } else {
+                            --row;
+                            --col;
+
+                            switch ( board[row][col] ) {
+                                case 0:
+                                    shots--;
+                                    board[row][col] = 3;
+
+                                    alert("Water!");
+                                    break;
+                                case 1:
+                                    shots--; 
+                                    touchedBoats++;
+                                    board[row][col] = 2;
+                                    alert("Well done! You've hit a boat!");
+                                    break;
+                                case 2:
+                                case 3:
+                                    throw new Error("You have already shooted in that position. Try it again");
+                                    break;
+                                default:
+                                    shots--;
+                                    throw new Error(" There was an error with the shot.");                           
+                            }
+                        }
+                } catch(e) {
+                    alert(e.message);
+                } finally {
+                    // The current state of the board is displayed
+                    console.log(board);
+                }
+            } while(shots!=0 && touchedBoats!=totalBoatPositions)
+
+
+            if(touchedBoats==totalBoatPositions) {
+                alert('Congratulations you have sunk all the boats!');
+            } else {
+                alert("I'm sorry, you lose.");
+            }
+        }
+
+        /**
+        * Execute the code of the entire application
+        */
+        function start(){
+            const rows = 8, 
+                    cols = 8,
+                    shots = 10;
+            let restart;
+            
+            do {
+                let board = createBoard(rows, cols),
+                    totalBoatPositions = 0;
+
+                totalBoatPositions = requestBoats(board);
+                startGame(shots, totalBoatPositions, board);
+
+                restart = confirm('Do you want to play again?');
+
+            } while(restart)
+
+            alert("See you soon!");
+        }
+
+
+        /**
+        * Launches the application once all the content of the page has been loaded.
+        */
+        window.onload = function(){	
+            start();
+        }
+    </script>
+    
+  </head>
+  <body>
+
+
+  </body>
+</html>
